@@ -1,0 +1,62 @@
+Notes.txt
+tmp/
+*.iso
+*.qcow2
+tags
+
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
+
+# Compiled binaries
+*.o
+*.a
+*.so
+*.so.*
+*.out
+*.exe
+
+# Editor files
+*.swp
+*.swo
+*~
+.*.sw?
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# Logs and temp files
+*.log
+*.tmp
+core
+core.*
+
+# Docker
+.dockerignore
+
+# CI packaging output
+artifacts/
+*.zip
+

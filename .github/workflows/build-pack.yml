@@ -1,0 +1,78 @@
+name: build-and-package
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [qemu, qotom]
+        mode: [debug, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build CI container
+        run: docker build -t dpdk-forwarder-build -f ci/Dockerfile .
+
+      - name: Build + package (${{ matrix.mode }} / ${{ matrix.device }})
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp \
+            -v "${PWD}:/work" \
+            -w /work \
+            dpdk-forwarder-build \
+            bash -lc "pwd; ls -la; ls -la devices || true; ls -la devices/${{ matrix.device }} || true; ./ci/build_inside_container.sh --mode ${{ matrix.mode }} --device ${{ matrix.device }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.mode }}_${{ matrix.device }}
+          path: artifacts/${{ matrix.mode }}_${{ matrix.device }}.zip
+          retention-days: 30
+
+  publish_release:
+    name: publish-release (main only)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Prepare release files
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp -f dist/debug_qemu/debug_qemu.zip release/debug_qemu.zip
+          cp -f dist/release_qemu/release_qemu.zip release/release_qemu.zip
+          cp -f dist/debug_qotom/debug_qotom.zip release/debug_qotom.zip
+          cp -f dist/release_qotom/release_qotom.zip release/release_qotom.zip
+          ls -lh release
+
+      - name: Create GitHub Release and upload zips
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: main-${{ github.sha }}
+          name: main-${{ github.sha }}
+          prerelease: true
+          files: |
+            release/debug_qemu.zip
+            release/release_qemu.zip
+            release/debug_qotom.zip
+            release/release_qotom.zip
+
+
