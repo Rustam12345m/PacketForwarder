@@ -26,7 +26,7 @@ static inline void process_direction(uint16_t in_port, uint16_t out_port,
     }
     stat->rx_pkts += num_rx;
 
-    // rx static
+    /* rx statistics */
     uint64_t rx_bytes = 0;
     for (uint16_t i=0;i<num_rx;++i) {
         rte_prefetch0(rte_pktmbuf_mtod(bufs[i], void *));
@@ -34,7 +34,7 @@ static inline void process_direction(uint16_t in_port, uint16_t out_port,
     }
     stat->rx_bytes += rx_bytes;
 
-    // packet pipeline
+    /* packet pipeline */
     uint16_t num_tx_req = forwarder(bufs, num_rx, fctx, out_port);
     if (num_tx_req == 0) {
         return;
@@ -43,7 +43,7 @@ static inline void process_direction(uint16_t in_port, uint16_t out_port,
     uint16_t num_tx = rte_eth_tx_burst(out_port, qid, bufs, num_tx_req);
     stat->tx_pkts += num_tx;
 
-    // tx static
+    /* tx statistics */
     uint64_t tx_bytes = 0;
     for (uint16_t i=0;i<num_tx;++i) {
         tx_bytes += rte_pktmbuf_pkt_len(bufs[i]);

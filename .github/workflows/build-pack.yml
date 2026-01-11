@@ -11,11 +11,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        device: [qemu, qotom]
-        mode: [debug, release]
 
     steps:
       - name: Checkout
@@ -24,7 +19,7 @@ jobs:
       - name: Build CI container
         run: docker build -t dpdk-forwarder-build -f ci/Dockerfile .
 
-      - name: Build + package (${{ matrix.mode }} / ${{ matrix.device }})
+      - name: Build all variants
         run: |
           docker run --rm \
             --user "$(id -u):$(id -g)" \
@@ -32,13 +27,34 @@ jobs:
             -v "${PWD}:/work" \
             -w /work \
             dpdk-forwarder-build \
-            bash -lc "pwd; ls -la; ls -la devices || true; ls -la devices/${{ matrix.device }} || true; ./ci/build_inside_container.sh --mode ${{ matrix.mode }} --device ${{ matrix.device }}"
+            ./ci/build_inside_container.sh --all
 
-      - name: Upload artifact
+      - name: Upload artifacts (debug_qemu)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.mode }}_${{ matrix.device }}
-          path: artifacts/${{ matrix.mode }}_${{ matrix.device }}.zip
+          name: debug_qemu
+          path: artifacts/debug_qemu.zip
+          retention-days: 30
+
+      - name: Upload artifacts (release_qemu)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_qemu
+          path: artifacts/release_qemu.zip
+          retention-days: 30
+
+      - name: Upload artifacts (debug_qotom)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug_qotom
+          path: artifacts/debug_qotom.zip
+          retention-days: 30
+
+      - name: Upload artifacts (release_qotom)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_qotom
+          path: artifacts/release_qotom.zip
           retention-days: 30
 
   publish_release:

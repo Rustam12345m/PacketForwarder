@@ -27,7 +27,7 @@ static inline void rx_process_port(uint16_t pid, uint16_t qid,
     uint16_t num = rte_eth_rx_burst(pid, qid, bufs, MAX_BURST);
     if (num) {
         stats->rx_pkts += num;
-        for (uint16_t i = 0; i < num; ++i) {
+        for (uint16_t i=0;i<num;++i) {
             stats->rx_bytes += rte_pktmbuf_pkt_len(bufs[i]);
         }
 
@@ -37,7 +37,8 @@ static inline void rx_process_port(uint16_t pid, uint16_t qid,
                                                  NULL);
         if (enq < num) {
             stats->drop_tx += num - enq;
-            for (uint16_t i = enq; i < num; ++i) {
+
+            for (uint16_t i=enq;i<num;++i) {
                 rte_pktmbuf_free(bufs[i]);
             }
         }
@@ -56,13 +57,14 @@ static inline void tx_process_port(uint16_t pid, uint16_t qid,
     if (num) {
         uint16_t sent = rte_eth_tx_burst(pid, qid, bufs, num);
         stats->tx_pkts += sent;
-        for (uint16_t i = 0; i < sent; ++i) {
+        for (uint16_t i=0;i<sent;++i) {
             stats->tx_bytes += rte_pktmbuf_pkt_len(bufs[i]);
         }
 
         if (sent < num) {
             stats->drop_tx += (uint64_t)(num - sent);
-            for (uint16_t i = sent; i < num; ++i) {
+
+            for (uint16_t i=sent;i<num;++i) {
                 rte_pktmbuf_free(bufs[i]);
             }
         }
@@ -83,10 +85,14 @@ static inline uint16_t process_direction(struct rte_ring *rx,
     if (num > 0) {
         uint16_t num_tx_req = forwarder(bufs, num, fctx, out_port);
         if (num_tx_req > 0) {
-            uint16_t enq = rte_ring_sp_enqueue_burst(tx, (void **)bufs, num_tx_req, NULL);
+            uint16_t enq = rte_ring_sp_enqueue_burst(tx,
+                                                     (void **)bufs,
+                                                     num_tx_req,
+                                                     NULL);
             if (enq < num_tx_req) {
                 stats->drop_tx += (num_tx_req - enq);
-                for (uint16_t i = enq; i < num_tx_req; ++i) {
+
+                for (uint16_t i=enq;i<num_tx_req;++i) {
                     rte_pktmbuf_free(bufs[i]);
                 }
             }

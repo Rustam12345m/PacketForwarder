@@ -26,6 +26,7 @@ target_include_directories(${BIN_NAME}
 target_compile_options(${BIN_NAME}
     PRIVATE
     ${DPDK_CFLAGS_OTHER}
+    -fno-omit-frame-pointer
 )
 target_link_libraries(${BIN_NAME}
     ${DPDK_LIBRARIES}

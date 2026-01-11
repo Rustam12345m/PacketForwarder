@@ -1,10 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT="$0"
+DEVICES=("qemu" "qotom")
+MODES=("debug" "release")
+
 # Defaults
 MODE="release"
 DEVICE="qemu"
 RUN_TESTS="${RUN_TESTS:-1}"
+BUILD_ALL=0
 
 # Parse arguments (support both --flag and positional styles)
 while [[ $# -gt 0 ]]; do
@@ -21,6 +26,10 @@ while [[ $# -gt 0 ]]; do
             RUN_TESTS="0"
             shift
             ;;
+        --all)
+            BUILD_ALL=1
+            shift
+            ;;
         *)
             echo "Unknown option: $1" >&2
             exit 1
@@ -28,10 +37,26 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Build all variants if --all is specified
+if [[ "$BUILD_ALL" == "1" ]]; then
+    echo "Building all variants..."
+    for device in "${DEVICES[@]}"; do
+        for mode in "${MODES[@]}"; do
+            echo "========================================"
+            if [[ "$RUN_TESTS" == "0" ]]; then
+                "$SCRIPT" --mode "$mode" --device "$device" --no-tests
+            else
+                "$SCRIPT" --mode "$mode" --device "$device"
+            fi
+        done
+    done
+    exit 0
+fi
+
 # Validate inputs
 case "$MODE" in
     debug) CMAKE_BUILD_TYPE="Debug" ;;
-    release) CMAKE_BUILD_TYPE="Release" ;;
+    release) CMAKE_BUILD_TYPE="RelWithDebInfo" ;;
     *) echo "Error: MODE must be 'debug' or 'release', got: $MODE" >&2; exit 1 ;;
 esac
 

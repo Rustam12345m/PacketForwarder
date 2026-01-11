@@ -292,13 +292,25 @@ int application_init(struct application *app)
     
     /* Enable RSS for multiple queues to distribute traffic */
     if (app->cfg.queues > 1) {
+        /* Get device info to check supported RSS hash functions */
+        struct rte_eth_dev_info dev_info;
+        retval = rte_eth_dev_info_get(app->cfg.port0, &dev_info);
+        if (retval < 0) {
+            fprintf(stderr, "rte_eth_dev_info_get(port %u) failed\n", app->cfg.port0);
+            retval = -1;
+            goto fail;
+        }
+
+        /* Use device-supported RSS hash functions */
+        uint64_t rss_hf = RTE_ETH_RSS_IP | RTE_ETH_RSS_TCP | RTE_ETH_RSS_UDP;
+        rss_hf &= dev_info.flow_type_rss_offloads;
+
         eth.rxmode.mq_mode = RTE_ETH_MQ_RX_RSS;
         eth.rx_adv_conf.rss_conf.rss_key = NULL;  /* Use default RSS key */
-        eth.rx_adv_conf.rss_conf.rss_hf = RTE_ETH_RSS_IP | RTE_ETH_RSS_TCP | RTE_ETH_RSS_UDP;
+        eth.rx_adv_conf.rss_conf.rss_hf = rss_hf;
     } else {
         eth.rxmode.mq_mode = RTE_ETH_MQ_RX_NONE;
     }
-    
     eth.txmode.mq_mode = RTE_ETH_MQ_TX_NONE;
 
     uint16_t ports[2] = { app->cfg.port0, app->cfg.port1 };

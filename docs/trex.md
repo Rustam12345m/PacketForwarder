@@ -24,6 +24,28 @@ How to use TRex with DPDK-forwarder
 
     cat /proc/cpuinfo | grep -E 'sse4_2|avx'
 
+    Fix cgi:
+
+    cd /opt/trex/
+    cat > cgi.py <<'PY'
+from html import escape as _escape
+
+def escape(s, quote=False):
+    return _escape(s, quote=quote)
+
+def parse_header(line):
+    parts = [p.strip() for p in line.split(';') if p.strip()]
+    key = parts[0].lower() if parts else ''
+    params = {}
+    for p in parts[1:]:
+        if '=' in p:
+            k, v = p.split('=', 1)
+            params[k.strip().lower()] = v.strip().strip('"')
+        else:
+            params[p.lower()] = ''
+    return key, params
+PY
+
 4. Bind ports:
 
     cd /opt/trex
@@ -34,10 +56,14 @@ How to use TRex with DPDK-forwarder
 
 5. Run:
 
+    # Dataplane:
     cd /opt/trex
-    sudo ./t-rex-64 -i \
-        --cfg none \
-        -a 0000:04:00.0 \
-        -a 0000:05:00.0 \
-        -l 1,2,3
+    ./t-rex-64 -i --cfg ../trex_cfg.yaml --no-scapy-server
 
+    # Console
+    reset
+    start -f stl/udp_1pkt_simple.py -p 0 -m 1mpps
+
+    # Statistics
+    stats -a -p
+    tui

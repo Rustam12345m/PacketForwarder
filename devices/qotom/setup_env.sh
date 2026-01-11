@@ -1,25 +1,35 @@
 #!/bin/bash
 set -e
-#./setup_env.sh enp4s0 enp5s0
 
-PORT0=${1:-"eth0"}
-PORT1=${2:-"eth1"}
-
-echo 1024 > /proc/sys/vm/nr_hugepages
+echo 2048 > /proc/sys/vm/nr_hugepages
 
 mkdir -p /mnt/forwarder
 mount -t hugetlbfs nodev /mnt/forwarder
 
+mkdir -p /mnt/trex
+mount -t hugetlbfs nodev /mnt/trex
+
 modprobe vfio
 modprobe vfio-pci
 
-# Find PCI addresses for eth0 and eth1
-PORT0_PCI=$(ethtool -i ${PORT0} | grep 'bus-info' | awk '{print $2}')
-PORT1_PCI=$(ethtool -i ${PORT1} | grep 'bus-info' | awk '{print $2}')
+# Find PCI addresses for Ethernet port and bind to DPDK
+interfaces=("eno1" "eno2" "eno3" "eno4" "enp4s0" "enp5s0" "enp6s0" "enp7s0")
+pci_addresses=()
+for interface in "${interfaces[@]}"; do
+    pci_address=$(ethtool -i ${interface} | grep 'bus-info' | awk '{print $2}')
 
-echo "PORT0 = ${PORT0} -> ${PORT0_PCI}"
-echo "PORT1 = ${PORT1} -> ${PORT1_PCI}"
+    if [ -n "$pci_address" ]; then
+        echo "${interface} -> ${pci_address}"
+        pci_addresses+=("$pci_address")
+    else
+        echo "Failed to find PCI address for ${interface}"
+    fi
+done
 
-dpdk-devbind.py --bind=vfio-pci $PORT0_PCI $PORT1_PCI
-dpdk-devbind.py --status
+# Bind all found PCI addresses to DPDK
+if [ ${#pci_addresses[@]} -gt 0 ]; then
+    dpdk-devbind.py --bind=vfio-pci "${pci_addresses[@]}"
+else
+    echo "No PCI addresses found to bind."
+fi
 

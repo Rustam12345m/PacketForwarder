@@ -1,0 +1,16 @@
+- version: 2
+  interfaces: ["0000:06:00.0", "0000:07:00.0"]
+  limit_memory: 1024
+  port_info:
+    - src_mac:  "aa:bb:cc:dd:ee:01"
+      dest_mac: "aa:bb:cc:dd:ee:02"
+    - src_mac:  "aa:bb:cc:dd:ee:02"
+      dest_mac: "aa:bb:cc:dd:ee:01"
+
+  platform:
+    master_thread_id: 1
+    latency_thread_id: 2
+    dual_if:
+      - socket: 0
+        threads: [3,4]
+

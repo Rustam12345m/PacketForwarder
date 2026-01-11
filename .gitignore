@@ -1,5 +1,6 @@
 Notes.txt
 tmp/
+local/
 *.iso
 *.qcow2
 tags
